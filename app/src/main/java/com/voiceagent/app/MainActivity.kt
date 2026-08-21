@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.Button
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -19,7 +21,21 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 96, 48, 48)
+        }
+
+        val galleryButton = Button(this).apply {
+            text = "🖼️ Gallery Vault"
+            setOnClickListener {
+                startActivity(Intent(this@MainActivity, GalleryActivity::class.java))
+            }
+        }
+
+        layout.addView(galleryButton)
+        setContentView(layout)
 
         if (hasAllPermissions()) {
             startVoiceListenerService()
