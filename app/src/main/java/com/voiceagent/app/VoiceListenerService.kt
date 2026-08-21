@@ -21,4 +21,25 @@ class VoiceListenerService : Service() {
         super.onCreate()
         startForeground(NOTIFICATION_ID, buildNotification())
         Log.d(TAG, "Voice Agent service started")
-        // TODO: Дараагийн шатан
+    }
+
+    private fun buildNotification(): Notification {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID, "Voice Agent", NotificationManager.IMPORTANCE_LOW
+            )
+            (getSystemService(NotificationManager::class.java)).createNotificationChannel(channel)
+        }
+        return Notification.Builder(this, CHANNEL_ID)
+            .setContentTitle("Voice Agent идэвхтэй")
+            .setContentText("Таны дуу хоолойг сонсож байна")
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .build()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+}
