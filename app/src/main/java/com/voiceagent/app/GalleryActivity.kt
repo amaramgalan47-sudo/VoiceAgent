@@ -11,14 +11,15 @@ import androidx.appcompat.app.AppCompatActivity
 
 class GalleryActivity : AppCompatActivity() {
 
-    private var selectedImageUri: Uri? = null
+    private var selectedImageUris: List<Uri> = emptyList()
+    private lateinit var statusText: TextView
 
-    private val pickImageLauncher = registerForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            selectedImageUri = uri
-            Toast.makeText(this, "Зураг сонгогдлоо. Одоо нуух боломжтой.", Toast.LENGTH_SHORT).show()
+    private val pickImagesLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            selectedImageUris = uris
+            statusText.text = "${uris.size} зураг сонгогдлоо. Одоо нуух боломжтой."
         }
     }
 
@@ -35,17 +36,22 @@ class GalleryActivity : AppCompatActivity() {
             textSize = 20f
         }
 
+        statusText = TextView(this).apply {
+            text = "Одоогоор зураг сонгоогүй байна"
+            textSize = 14f
+        }
+
         val pickButton = Button(this).apply {
-            text = "📷 Зураг сонгох"
+            text = "📷 Зураг сонгох (олноор)"
             setOnClickListener {
-                pickImageLauncher.launch("image/*")
+                pickImagesLauncher.launch("image/*")
             }
         }
 
         val hideButton = Button(this).apply {
-            text = "🔒 Сонгосон зургийг нуух"
+            text = "🔒 Сонгосон зургуудыг нуух"
             setOnClickListener {
-                hideSelectedImage()
+                hideSelectedImages()
             }
         }
 
@@ -57,37 +63,42 @@ class GalleryActivity : AppCompatActivity() {
         }
 
         layout.addView(title)
+        layout.addView(statusText)
         layout.addView(pickButton)
         layout.addView(hideButton)
         layout.addView(viewVaultButton)
         setContentView(layout)
     }
 
-    private fun hideSelectedImage() {
-        val uri = selectedImageUri
-        if (uri == null) {
+    private fun hideSelectedImages() {
+        if (selectedImageUris.isEmpty()) {
             Toast.makeText(this, "Эхлээд зураг сонгоно уу", Toast.LENGTH_SHORT).show()
             return
         }
 
-        try {
-            val inputStream = contentResolver.openInputStream(uri)
-            val vaultDir = java.io.File(filesDir, "vault")
-            if (!vaultDir.exists()) vaultDir.mkdirs()
+        val vaultDir = java.io.File(filesDir, "vault")
+        if (!vaultDir.exists()) vaultDir.mkdirs()
 
-            val fileName = "img_${System.currentTimeMillis()}.jpg"
-            val outFile = java.io.File(vaultDir, fileName)
-            inputStream?.use { input ->
-                outFile.outputStream().use { output ->
-                    input.copyTo(output)
+        var successCount = 0
+
+        for (uri in selectedImageUris) {
+            try {
+                val inputStream = contentResolver.openInputStream(uri)
+                val fileName = "img_${System.currentTimeMillis()}_${successCount}.jpg"
+                val outFile = java.io.File(vaultDir, fileName)
+                inputStream?.use { input ->
+                    outFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
                 }
+                successCount++
+            } catch (e: Exception) {
+                // Тухайн зурган дээр алдаа гарвал дараагийнхыг үргэлжлүүлнэ
             }
-
-            Toast.makeText(this, "Зураг нуугдлаа! Vault-т хадгалагдлаа.", Toast.LENGTH_SHORT).show()
-            selectedImageUri = null
-
-        } catch (e: Exception) {
-            Toast.makeText(this, "Алдаа гарлаа: ${e.message}", Toast.LENGTH_SHORT).show()
         }
+
+        Toast.makeText(this, "$successCount зураг нуугдлаа!", Toast.LENGTH_SHORT).show()
+        selectedImageUris = emptyList()
+        statusText.text = "Одоогоор зураг сонгоогүй байна"
     }
 }
